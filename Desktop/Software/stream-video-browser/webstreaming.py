@@ -6,6 +6,8 @@
 # TODO change the import statement below
 from pyimagesearch.motion_detection import SingleMotionDetector
 from imutils.video import VideoStream
+
+# TODO add a way to play sound on their browser
 from flask import Response
 from flask import Flask
 from flask import render_template
@@ -31,19 +33,92 @@ app = Flask(__name__)
 vs = VideoStream(src=0).start()
 time.sleep(2.0)
 
-# ^ Initialization ==================================================
+# ^ Initialization ================================================
 
 # Routes ==========================================================
-@app.route("/shows")
+
+# Typical Order for new User Between Routes
+"""Optional"""
+# TODO
+# "/" - index.html - Overview of what our app does
+# Image of instruments
+# Name of App
+# Link to Login Page
+# Instructions for how to use app
+""" ^ Optional"""
+
+"""Required"""
+# TODO
+# "/login" - login.html - Login
+# "/instruments" - instruments.html - Look at instruments and settings you've used before
+# Table of instruments played before 
+# Dropdown Option that starts with "New Instrument" and has all instruments played before 
+# and has a button that links to to go to setup.html to create a new mapping for a new instrument
+""" ^ Required"""
+
+"""Optional"""
+# "/setup" - setup.html - Take still image and assign drums to objects in frame, form data
+	# TODO add
+	# Category of Instrument: Percussion, Wind, Brass  -- Dropdown
+	# Based on Above: Choose correct Instrument -- Dropdown
+	# Select How you want to associate keys
+		# Previous 
+	# Associate Instrument Keys with Places in the Real World -- 
+	# 	Background -- image of selected instrument
+	# 	Foreground -- clickable buttons that will change color and
+	#   have the note associated with that part of the instrument and the background
+	#   color of the button will be based on the selection from the real image data 
+	#   that are located above the respective notes. 
+	# Associate Instrument Keys Automatic
+
+	# Each a button based on an image of an insrument, on button press, show image, 
+	# 
+""" ^ Optional"""
+
+"""Required"""
+# "/play" - play.html - decode which instrument you are using from form in setup
+""" ^ Required"""
+
+"""Optional"""
+# "/download" - download.html - download selected items
+""" ^ Optional"""
+
+
+
+# Explanation of site concept page ================================
+# TODO:
+# Determine content required and implement
+@app.route("/")
 def index():
 	# return the rendered template
 	return render_template("index.html")
+# ^ Explanation of site concept page ===============================
 
 
-@app.route("/")
-def test():
+# Backend Motion Detection =========================================
+@app.route("/vid")
+def video_test_zone():
 	# return the rendered template
 	return render_template("test.html")
+# ^ Backend Motion Detection ========================================
+
+
+# TODO
+"""
+
+"""
+
+# Login page
+@app.route("/login")
+
+# Configure your play settings
+@app.route("/setup")
+
+# Play insrument
+@app.route("/play")
+
+# Download songs
+@app.route("/download")
 
 # ^ Routes ==========================================================
 
