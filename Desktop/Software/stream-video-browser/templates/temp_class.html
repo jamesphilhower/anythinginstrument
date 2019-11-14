@@ -11,8 +11,6 @@
     <h2> Instrument: </h2>
 
         <div class="drum-kit-wrapper">
-      <img id="crash-ride" class="crash-cymbal" src="https://raw.githubusercontent.com/ArunMichaelDsouza/javascript-30-course/master/src/01-javascript-drum-kit/img/crash.png" alt="Crash cymbal">
-      <img id="hihat-top" class="hihat-top-cymbal" src="https://raw.githubusercontent.com/ArunMichaelDsouza/javascript-30-course/master/src/01-javascript-drum-kit/img/hihat-top.png" alt="Hi Hat cymbal">
       <div data-key="74" class="key snare">
         <kbd>J</kbd>
       </div>
@@ -45,8 +43,8 @@
       </div>
       <img class="drum-kit" src="https://raw.githubusercontent.com/ArunMichaelDsouza/javascript-30-course/master/src/01-javascript-drum-kit/img/drum-kit.png" alt="Drum Kit" />
     </div>
-  </section>
-</main>
+
+
 <audio data-key="74" src="https://raw.githubusercontent.com/ArunMichaelDsouza/javascript-30-course/master/src/01-javascript-drum-kit/sounds/snare.wav"></audio>
 <audio data-key="66" src="https://raw.githubusercontent.com/ArunMichaelDsouza/javascript-30-course/master/src/01-javascript-drum-kit/sounds/kick.wav"></audio>
 <audio data-key="86" src="https://raw.githubusercontent.com/ArunMichaelDsouza/javascript-30-course/master/src/01-javascript-drum-kit/sounds/kick.wav"></audio>
@@ -59,21 +57,6 @@
 <audio data-key="75" src="https://raw.githubusercontent.com/ArunMichaelDsouza/javascript-30-course/master/src/01-javascript-drum-kit/sounds/hihat-close.wav"></audio>
     
 
-    <script>
-
-      var i = 0;
-      function nextFrame() {
-        someanimation();
-        i++;
-        // Continue the loop in 3s
-        setTimeout(nextFrame, 300);
-      }
-      // Start the loop
-      setTimeout(nextFrame, 0);
-      function someanimation(){
-        fetch("{{url_for('text_feed') }}").then((response) => response.text().then(yourCallback));
-      }
-      function yourCallback( retrievedText ) { console.log(retrievedText) }    
-    </script>
+    <script src="/static/drum.js"></script>
   </body>
 </html>

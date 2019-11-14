@@ -8,12 +8,13 @@ class SingleMotionDetector:
     def __init__(self, accumWeight=0.5):
         # store the accumulated weight factor
         self.accumWeight = accumWeight
-        self.trys = 0
         self.q = []
+
         # initialize the background model
         # TODO Change this initialization to be what we
         # use to select the pieces see update()
         self.bg = None
+        self.trys = 0
         # tracked_objects_int, number of items in the picture
         # current_coords_one, [x, y] - based on closest previous of previous_coords
         # current_coords_two, [x, y] - based on closest previous of previous_coords
@@ -43,18 +44,16 @@ class SingleMotionDetector:
         # average
         #arg1, current image, arg2 image that is being updated, arg3, rate of update, or how much we weight image
         cv2.accumulateWeighted(image, self.bg, self.accumWeight)
-
     #tVal is a value to determine what motion is, things greater than tval -> 255, else 0
-    def detect(self, gray_image, color_image,  tVal=25):
+    def detect(self, image, tVal=25):
         # TODO OVERALL GOAL IN CHANGING FUNCTION 
         # change detect to detect things only of a certain color that are moving 
-        
+        image = cv2.GaussianBlur(image, (7, 7), 0)
         # compute the absolute difference between the background model
-        # and the gray_image passed in, then threshold the detected_motion_floats gray_image
+        # and the image passed in, then threshold the detected_motion_floats 
         colors = ["b","g","r"]
-
         if self.trys == 0:
-            still = color_image
+            still = image
             r = cv2.selectROI(still)
             imcrop = still[int(r[1]):int(r[1]+r[3]), int(r[0]):int(r[0]+r[2])]
             for c, color in enumerate(colors):
@@ -64,7 +63,7 @@ class SingleMotionDetector:
             cv2.destroyAllWindows()
 
         for c, color in enumerate(colors):           
-            color_select = np.copy(color_image)
+            color_select = np.copy(image)
             for e, row in enumerate(color_select[:,:,c]):
                 for f, pixel in enumerate(row):
                     if pixel != 0 and (pixel > self.q[c][0] or pixel < self.q[c][1]):
@@ -72,10 +71,17 @@ class SingleMotionDetector:
                         color_select[e][f][1] = 0
                         color_select[e][f][2] = 0
 
-        detected_color_floats = cv2.cvtColor(color_select, cv2.COLOR_BGR2GRAY)
+        
+        gray_color = cv2.cvtColor(color_select, cv2.COLOR_BGR2GRAY)
 
         """Float Values"""
-        detected_motion_floats = cv2.absdiff(self.bg.astype("uint8"), gray_image) 
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        # TODO expreiment not blurring vs blurring and how much
+        detected_motion_floats = cv2.absdiff(self.bg.astype("uint8"), gray) 
+
+
+        # TODO create a function that checks an image for certain colors
+        # detected_drum_sticks_image = def extractColors() by using rgb value
         
         # Debugging
         #cv2.imshow("self.bg", self.bg)
@@ -84,9 +90,19 @@ class SingleMotionDetector:
 
         """Binary Values"""
         detected_motion_binary = cv2.threshold(detected_motion_floats, tVal, 255, cv2.THRESH_BINARY)[1]
-        detected_color_binary = cv2.threshold(detected_color_floats, 1, 255, cv2.THRESH_BINARY)[1]
+        gray_color =  cv2.threshold(gray_color, tVal, 255, cv2.THRESH_BINARY)[1]
 
-        detected_motion_binary = cv2.bitwise_and(detected_color_binary, detected_motion_binary)
+        detected_motion_binary = cv2.bitwise_and(detected_motion_binary, gray_color)
+        # TODO calculate the threshold for detected_drum_sticks
+        # Correct the following function
+        # detected_color_binary = cv2.threshold(detected_motion_floats, tVal, 255, cv2.THRESH_BINARY)[1]
+
+        # TODO AND && detected_motion_floats and detected_color_binary
+        # combined_color_and_motion_binary = cv2.bitwise_and(detected_color_binary, detected_motion_binary)
+
+        # Debugging
+        #cv2.imshow(combined_color_and_motion_binary)
+        # cv2.imshow("detected_motion_binary", detected_motion_binary)
 
 
         # perform a series of erosions and dilations to remove small
@@ -107,6 +123,8 @@ class SingleMotionDetector:
 
         detected_motion_binary = cv2.erode(detected_motion_binary, None, iterations=2)
         detected_motion_binary = cv2.dilate(detected_motion_binary, None, iterations=2)
+
+
 
         # Debugging
         #cv2.imshow("changed_detected_motion_binary", detected_motion_binary)

@@ -6,8 +6,6 @@
 # TODO change the import statement below
 from pyimagesearch.motion_detection import SingleMotionDetector
 from imutils.video import VideoStream
-
-# TODO add a way to play sound on their browser
 from flask import Response
 from flask import Flask
 from flask import render_template
@@ -17,12 +15,22 @@ import datetime
 import imutils
 import time
 import cv2
+import numpy as np
+
+from flask import Flask, jsonify, render_template, request
+import time
+
+string_test = ""
 
 # initialize the output frame and a lock used to ensure thread-safe
 # exchanges of the output frames (useful for multiple browsers/tabs
 # are viewing the stream)
 outputFrame = None
 lock = threading.Lock()
+
+# James Initizalize the output sound and a lock used to ensure thread-safe
+outputSound = None
+sound_lock = threading.Lock()
 
 # initialize a flask object
 app = Flask(__name__)
@@ -77,6 +85,7 @@ time.sleep(2.0)
 
 """Required"""
 # "/play" - play.html - decode which instrument you are using from form in setup
+# Create Javascript to play sound
 """ ^ Required"""
 
 """Optional"""
@@ -91,23 +100,22 @@ time.sleep(2.0)
 @app.route("/")
 def index():
 	# return the rendered template
-	return render_template("index.html")
+	#return render_template("index.html")
+    return render_template('main.html', reload = time.time())
+
 # ^ Explanation of site concept page ===============================
 
 
 # Backend Motion Detection =========================================
 @app.route("/vid")
 def video_test_zone():
+	# TODO Create a javascript function in test.html that plays a simple sound when told to from the backend 
 	# return the rendered template
 	return render_template("test.html")
 # ^ Backend Motion Detection ========================================
 
-
 # TODO
 """
-
-"""
-
 # Login page
 @app.route("/login")
 
@@ -119,6 +127,7 @@ def video_test_zone():
 
 # Download songs
 @app.route("/download")
+"""
 
 # ^ Routes ==========================================================
 
@@ -141,6 +150,9 @@ def detect_motion(frameCount):
 		# convert the frame to grayscale, and blur it
 		frame = vs.read()
 		frame = imutils.resize(frame, width=400)
+		color = np.copy(frame)
+		color = cv2.GaussianBlur(color, (7, 7), 0)
+
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 		# TODO expreiment not blurring vs blurring and how much
 		gray = cv2.GaussianBlur(gray, (7, 7), 0)
@@ -150,7 +162,7 @@ def detect_motion(frameCount):
 		# continue to process the frame
 		if total > frameCount:
 			# detect motion in the image, passing grayscale image to class
-			motion = md.detect(gray)
+			motion = md.detect(gray, color)
 
 			# check to see if motion was found in the frame
 			if motion is not None:
@@ -198,6 +210,41 @@ def generate():
 		yield(b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + 
 			bytearray(encodedImage) + b'\r\n')
 
+
+import random
+import string		
+def audio_connection():
+	# grab global references to the output frame and lock variables
+
+
+
+	def randomString(stringLength=10):
+		"""Generate a random string of fixed length """
+		letters = string.ascii_lowercase
+		return ''.join(random.choice(letters) for i in range(stringLength))
+	
+
+	
+	global string_test
+	
+	#string_test = randomString()
+	string_test = str(random.randint(69,75))
+	return string_test
+
+@app.route("/classtest")
+def test_feed_class():
+	return render_template("index_orig.html")
+
+@app.route("/test")
+def test_feed():
+	return render_template("test.html")
+
+
+@app.route("/james")
+def test_feeder():
+	return render_template("temp_class.html")
+
+
 @app.route("/video_feed")
 def video_feed():
 	# return the response generated along with the specific media
@@ -205,6 +252,43 @@ def video_feed():
 	# Generate grabs the global variable outputFrame and encodes it so it can be sent to the user
 	return Response(generate(),
 		mimetype = "multipart/x-mixed-replace; boundary=frame")
+
+@app.route("/text_feed")
+def text_feed():
+	# return the response generated along with the specific media
+	# type (mime type)
+	# Generate grabs the global variable outputFrame and encodes it so it can be sent to the user
+	return  Response(audio_connection(), mimetype='text/xml')
+
+
+
+@app.route("/info")
+def api_info():
+    info = {
+       "ip" : "127.0.0.1",
+       "hostname" : "everest",
+       "description" : "Main server",
+       "load" : [ 3.21, 7, 14 ]
+    }
+    return jsonify(info)
+
+@app.route("/calc")
+def add():
+    a = int(request.args.get('a', 0))
+    b = int(request.args.get('b', 0))
+    div = 'na'
+    if b != 0:
+        div = a/b
+    return jsonify({
+        "a"        :  a,
+        "b"        :  b,
+        "add"      :  a+b,
+        "multiply" :  a*b,
+        "subtract" :  a-b,
+        "divide"   :  div,
+    })
+
+
 
 # check to see if this is the main thread of execution
 if __name__ == '__main__':
