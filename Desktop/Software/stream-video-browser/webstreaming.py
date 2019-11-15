@@ -28,6 +28,8 @@ string_test = ""
 outputFrame = None
 lock = threading.Lock()
 
+location = None
+
 # James Initizalize the output sound and a lock used to ensure thread-safe
 outputSound = None
 sound_lock = threading.Lock()
@@ -136,7 +138,7 @@ def video_test_zone():
 def detect_motion(frameCount):
 	# grab global references to the video stream, output frame, and
 	# lock variables
-	global vs, outputFrame, lock
+	global vs, location, lock
 
 	# initialize the motion detector and the total number of frames
 	# read thus far
@@ -149,10 +151,10 @@ def detect_motion(frameCount):
 		# read the next frame from the video stream, resize it,
 		# convert the frame to grayscale, and blur it
 		frame = vs.read()
-		frame = imutils.resize(frame, width=80)
+		frame = imutils.resize(frame, width=400)
 		color = np.copy(frame)
 		color = cv2.GaussianBlur(color, (7, 7), 0)
-
+		motion = None
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 		# TODO expreiment not blurring vs blurring and how much
 		gray = cv2.GaussianBlur(gray, (7, 7), 0)
@@ -163,18 +165,10 @@ def detect_motion(frameCount):
 		if total > frameCount:
 			# detect motion in the image, passing grayscale image to class
 			motion = md.detect(gray, color)
-
 			# check to see if motion was found in the frame
-			if motion is not None:
-				# unpack the tuple and draw the box surrounding the
-				# "motion area" on the output frame
-				#_detected_motion_binary_ is not used and the md.detect function doesn't need to have it, 
-				# but it could be used if we want to show the user a changed image by changing 
-				# outputFrame to _detected_motion_binary_
-				(_detected_motion_binary_, (minX, minY, maxX, maxY)) = motion
-				cv2.rectangle(frame, (minX, minY), (maxX, maxY),
-					(0, 0, 255), 2)
-		
+			if motion is None:
+				continue
+
 		# update the background model and increment the total number
 		# of frames read thus far
 		md.update(gray)
@@ -184,47 +178,21 @@ def detect_motion(frameCount):
 		# lock
 		# TODO may want to copy something other than frame, like _detected_motion_binary_
 		with lock:
-			outputFrame = frame.copy()
+			location = motion
 		
 def generate():
 	# grab global references to the output frame and lock variables
-	global outputFrame, lock
-
-	# loop over frames from the output stream
-	while True:
-		# wait until the lock is acquired
-		with lock:
-			# check if the output frame is available, otherwise skip
-			# the iteration of the loop
-			if outputFrame is None:
-				continue
-
-			# encode the frame in JPEG format
-			(flag, encodedImage) = cv2.imencode(".jpg", outputFrame)
-
-			# ensure the frame was successfully encoded
-			if not flag:
-				continue
-
-		# yield the output frame in the byte format
-		yield(b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + 
-			bytearray(encodedImage) + b'\r\n')
+	global location, lock
+	with lock:
+		if location is None:
+			return None
+		return location
 
 
 import random
 import string		
 def audio_connection():
-	# grab global references to the output frame and lock variables
-
-
-
-	def randomString(stringLength=10):
-		"""Generate a random string of fixed length """
-		letters = string.ascii_lowercase
-		return ''.join(random.choice(letters) for i in range(stringLength))
-	
-
-	
+	# grab global references to the output frame and lock variables	
 	global string_test
 	
 	#string_test = randomString()
@@ -250,8 +218,11 @@ def video_feed():
 	# return the response generated along with the specific media
 	# type (mime type)
 	# Generate grabs the global variable outputFrame and encodes it so it can be sent to the user
-	return Response(generate(),
-		mimetype = "multipart/x-mixed-replace; boundary=frame")
+	#return Response(generate(),
+	#	mimetype = "multipart/x-mixed-replace; boundary=frame")
+	global location
+	print(location)
+	return  Response(generate(), mimetype='text/xml')
 
 @app.route("/text_feed")
 def text_feed():
@@ -271,23 +242,6 @@ def api_info():
        "load" : [ 3.21, 7, 14 ]
     }
     return jsonify(info)
-
-@app.route("/calc")
-def add():
-    a = int(request.args.get('a', 0))
-    b = int(request.args.get('b', 0))
-    div = 'na'
-    if b != 0:
-        div = a/b
-    return jsonify({
-        "a"        :  a,
-        "b"        :  b,
-        "add"      :  a+b,
-        "multiply" :  a*b,
-        "subtract" :  a-b,
-        "divide"   :  div,
-    })
-
 
 
 # check to see if this is the main thread of execution

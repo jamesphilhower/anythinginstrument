@@ -3,13 +3,16 @@
 import numpy as np
 import imutils
 import cv2
+from skimage import measure
+
 
 class SingleMotionDetector:
     def __init__(self, accumWeight=0.5):
         # store the accumulated weight factor
         self.accumWeight = accumWeight
         self.trys = 0
-        self.q = []
+        self.lower = []
+        self.upper = []
         # initialize the background model
         # TODO Change this initialization to be what we
         # use to select the pieces see update()
@@ -59,11 +62,12 @@ class SingleMotionDetector:
             imcrop = still[int(r[1]):int(r[1]+r[3]), int(r[0]):int(r[0]+r[2])]
             for c, color in enumerate(colors):
                 q85, q15 = np.percentile(imcrop[:,:,c], [85, 15])
-                self.q.append([q85, q15])
+                self.lower.append(q15)
+                self.upper.append(q85)
             self.trys = 1
             cv2.destroyAllWindows()
 
-        for c, color in enumerate(colors):           
+        """for c, color in enumerate(colors):           
             color_select = np.copy(color_image)
             for e, row in enumerate(color_select[:,:,c]):
                 for f, pixel in enumerate(row):
@@ -72,7 +76,11 @@ class SingleMotionDetector:
                         color_select[e][f][1] = 0
                         color_select[e][f][2] = 0
 
-        detected_color_floats = cv2.cvtColor(color_select, cv2.COLOR_BGR2GRAY)
+        """
+        detected_color_binary = cv2.inRange(color_image, np.array(self.lower), np.array(self.upper))
+        
+
+        #detected_color_floats = cv2.cvtColor(color_select, cv2.COLOR_BGR2GRAY)
 
         """Float Values"""
         detected_motion_floats = cv2.absdiff(self.bg.astype("uint8"), gray_image) 
@@ -84,10 +92,9 @@ class SingleMotionDetector:
 
         """Binary Values"""
         detected_motion_binary = cv2.threshold(detected_motion_floats, tVal, 255, cv2.THRESH_BINARY)[1]
-        detected_color_binary = cv2.threshold(detected_color_floats, 1, 255, cv2.THRESH_BINARY)[1]
+        #detected_color_binary = cv2.threshold(detected_color_floats, 1, 255, cv2.THRESH_BINARY)[1]
 
-        detected_motion_binary = cv2.bitwise_and(detected_color_binary, detected_motion_binary)
-
+        combined_binary = cv2.bitwise_and(detected_color_binary, detected_motion_binary)
 
         # perform a series of erosions and dilations to remove small
         # blobs
@@ -105,8 +112,8 @@ class SingleMotionDetector:
         # 	<insert morphological operations>
         #	tracked_objects_int, coords_one, coords_two = def analyze_objects_in_binary(combined_color_and_motion_binary, previous_coords_one, previous_coords_two)
 
-        detected_motion_binary = cv2.erode(detected_motion_binary, None, iterations=2)
-        detected_motion_binary = cv2.dilate(detected_motion_binary, None, iterations=2)
+        combined_binary = cv2.erode(combined_binary, None, iterations=2)
+        combined_binary = cv2.dilate(combined_binary, None, iterations=2)
 
         # Debugging
         #cv2.imshow("changed_detected_motion_binary", detected_motion_binary)
@@ -121,11 +128,11 @@ class SingleMotionDetector:
         # 
         # find contours in the thresholded image and initialize the
         # minimum and maximum bounding box regions for motion
-        cnts = cv2.findContours(detected_motion_binary.copy(), cv2.RETR_EXTERNAL,
+        """cnts = cv2.findContours(detected_motion_binary.copy(), cv2.RETR_EXTERNAL,
             cv2.CHAIN_APPROX_SIMPLE)
         cnts = imutils.grab_contours(cnts)
         (minX, minY) = (np.inf, np.inf)
-        (maxX, maxY) = (-np.inf, -np.inf)
+        (maxX, maxY) = (-np.inf, -np.inf
 
         # if no contours were found, return None
         if len(cnts) == 0:
@@ -142,4 +149,17 @@ class SingleMotionDetector:
         # otherwise, return a tuple of the thresholded image along
         # with bounding box
         # TODO return two bounding boxes based on the two points we find
-        return (detected_motion_binary, (minX, minY, maxX, maxY))
+        """
+        n = 4
+        labels = measure.label(combined_binary, n)
+        features = measure.regionprops(labels)
+        properties = sorted(features, key=lambda p: p.area, reverse=True)
+        if len(properties) == 0:
+            return None
+        elif len(properties) == 1:
+            return_string = "\t".join([str(x) for x in [properties[0].area, properties[0].centroid]])
+        else:
+            return_string = "\t".join([str(x) for x in [properties[0].area, properties[0].centroid, properties[1].area, properties[1].centroid]])
+
+        print("From Function",return_string)
+        return return_string

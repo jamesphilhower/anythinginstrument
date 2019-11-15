@@ -5,9 +5,23 @@
   <body>
 
     <h1> Motion: </h1>
-    <img src="{{ url_for('video_feed') }}">
+    <!---<img src="{{ url_for('video_feed') }}">-->
+    <script>
+      j = 0;
+      function nextFrames() {
+        someanimations();
+        j++;
+        // Continue the loop in 3s
+        setTimeout(nextFrames, 300);
+      }
+      // Start the loop
+      setTimeout(nextFrames, 0);
+      function someanimations(){
+        fetch("{{url_for('video_feed') }}").then((response) => response.text().then(yourCallbacks));
+      }
+      function yourCallbacks( retrievedText ) { console.log(retrievedText) }
 
-
+    </script>
     <h2> Instrument: </h2>
 
         <div class="drum-kit-wrapper">
@@ -59,7 +73,7 @@
 <audio data-key="75" src="https://raw.githubusercontent.com/ArunMichaelDsouza/javascript-30-course/master/src/01-javascript-drum-kit/sounds/hihat-close.wav"></audio>
     
 
-    <script>
+    <!--<script>
 
       var i = 0;
       function nextFrame() {
@@ -74,6 +88,6 @@
         fetch("{{url_for('text_feed') }}").then((response) => response.text().then(yourCallback));
       }
       function yourCallback( retrievedText ) { console.log(retrievedText) }    
-    </script>
+    </script>-->
   </body>
 </html>
