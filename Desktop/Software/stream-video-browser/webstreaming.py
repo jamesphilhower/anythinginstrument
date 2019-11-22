@@ -25,9 +25,12 @@ string_test = ""
 # initialize the output frame and a lock used to ensure thread-safe
 # exchanges of the output frames (useful for multiple browsers/tabs
 # are viewing the stream)
+
+color_frame = None
+motion_frame = None
 outputFrame = None
 lock = threading.Lock()
-
+lock = threading.Lock()
 location = None
 
 # James Initizalize the output sound and a lock used to ensure thread-safe
@@ -114,7 +117,42 @@ def video_test_zone():
 	# TODO Create a javascript function in test.html that plays a simple sound when told to from the backend 
 	# return the rendered template
 	return render_template("test.html")
+
+
+@app.route("/mixed")
+def mixed():
+	# TODO Create a javascript function in test.html that plays a simple sound when told to from the backend 
+	# return the rendered template
+	return render_template("mixed.html")
 # ^ Backend Motion Detection ========================================
+
+
+@app.route("/video_feeder")
+def video_feeder():
+	# return the response generated along with the specific media
+	# type (mime type)
+	# Generate grabs the global variable outputFrame and encodes it so it can be sent to the user
+	return Response(generate_orig(),
+		mimetype = "multipart/x-mixed-replace; boundary=frame")
+
+@app.route("/video_feeder2")
+def video_feeder2():
+	# return the response generated along with the specific media
+	# type (mime type)
+	# Generate grabs the global variable outputFrame and encodes it so it can be sent to the user
+	return Response(generate_orig2(),
+		mimetype = "multipart/x-mixed-replace; boundary=frame")
+
+@app.route("/video_feeder3")
+def video_feeder3():
+	# return the response generated along with the specific media
+	# type (mime type)
+	# Generate grabs the global variable outputFrame and encodes it so it can be sent to the user
+	return Response(generate_orig3(),
+		mimetype = "multipart/x-mixed-replace; boundary=frame")
+
+
+
 
 # TODO
 """
@@ -138,7 +176,7 @@ def video_test_zone():
 def detect_motion(frameCount):
 	# grab global references to the video stream, output frame, and
 	# lock variables
-	global vs, location, lock
+	global vs, location, lock, outputFrame, color_frame, motion_frame
 
 	# initialize the motion detector and the total number of frames
 	# read thus far
@@ -158,6 +196,9 @@ def detect_motion(frameCount):
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 		# TODO expreiment not blurring vs blurring and how much
 		gray = cv2.GaussianBlur(gray, (7, 7), 0)
+		_detected_motion_binary_ = np.full(gray.shape, 255)
+		color_frame = np.full(gray.shape, 255)
+		motion_frame = np.full(gray.shape, 255)
 
 		# if the total number of frames has reached a sufficient
 		# number to construct a reasonable background model, then
@@ -166,12 +207,17 @@ def detect_motion(frameCount):
 			# detect motion in the image, passing grayscale image to class
 			motion = md.detect(gray, color)
 			# check to see if motion was found in the frame
-			if motion is None:
-				continue
+			if motion is not None:
+				#coords_string, _detected_motion_binary_, minX, minY, maxX, maxY, color_frame, motion_frame, = motion
+				coords_string, _detected_motion_binary_, minX, minY, maxX, maxY = motion
+
+				cv2.rectangle(_detected_motion_binary_, (int(minX), int(minY)), (int(maxX), int(maxY)), (255), 2)
+				#cv2.rectangle(color_frame, (int(minX), int(minY)), (int(maxX), int(maxY)), (255), 2)
+				#cv2.rectangle(motion_frame, (int(minX), int(minY)), (int(maxX), int(maxY)), (255), 2)
 
 		# update the background model and increment the total number
 		# of frames read thus far
-		md.update(gray)
+		#md.update(gray)
 		total += 1
 
 		# acquire the lock, set the output frame, and release the
@@ -179,6 +225,7 @@ def detect_motion(frameCount):
 		# TODO may want to copy something other than frame, like _detected_motion_binary_
 		with lock:
 			location = motion
+			outputFrame = _detected_motion_binary_
 		
 def generate():
 	# grab global references to the output frame and lock variables
@@ -188,6 +235,65 @@ def generate():
 			return None
 		return location
 
+def generate_orig():
+	# grab global references to the output frame and lock variables
+	global outputFrame, lock
+	# loop over frames from the output stream
+	while True:
+		# wait until the lock is acquired
+		with lock:
+			# check if the output frame is available, otherwise skip
+			# the iteration of the loop
+			if outputFrame is None:
+				continue
+			# encode the frame in JPEG format
+			(flag, encodedImage) = cv2.imencode(".jpg", outputFrame)
+			# ensure the frame was successfully encoded
+			if not flag:
+				continue
+		# yield the output frame in the byte format
+		yield(b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + 
+			bytearray(encodedImage) + b'\r\n')
+
+def generate_orig2():
+	# grab global references to the output frame and lock variables
+	global color_frame, lock
+	# loop over frames from the output stream
+	while True:
+		# wait until the lock is acquired
+		with lock:
+			# check if the output frame is available, otherwise skip
+			# the iteration of the loop
+			if color_frame is None:
+				continue
+			# encode the frame in JPEG format
+			(flag, encodedImage) = cv2.imencode(".jpg", color_frame)
+			# ensure the frame was successfully encoded
+			if not flag:
+				continue
+		# yield the output frame in the byte format
+		yield(b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + 
+			bytearray(encodedImage) + b'\r\n')
+
+def generate_orig3():
+	# grab global references to the output frame and lock variables
+	global motion_frame, lock
+	# loop over frames from the output stream
+	while True:
+		# wait until the lock is acquired
+		with lock:
+			# check if the output frame is available, otherwise skip
+			# the iteration of the loop
+			if motion_frame is None:
+				continue
+			# encode the frame in JPEG format
+			(flag, encodedImage) = cv2.imencode(".jpg", motion_frame)
+			# ensure the frame was successfully encoded
+			if not flag:
+				continue
+		# yield the output frame in the byte format
+		yield(b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + 
+			bytearray(encodedImage) + b'\r\n')
 
 import random
 import string		

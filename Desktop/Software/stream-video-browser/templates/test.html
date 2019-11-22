@@ -7,19 +7,13 @@
     <h1> Motion: </h1>
     <!---<img src="{{ url_for('video_feed') }}">-->
     <script>
-      j = 0;
-      function nextFrames() {
-        someanimations();
-        j++;
-        // Continue the loop in 3s
-        setTimeout(nextFrames, 300);
-      }
-      // Start the loop
-      setTimeout(nextFrames, 0);
       function someanimations(){
         fetch("{{url_for('video_feed') }}").then((response) => response.text().then(yourCallbacks));
       }
-      function yourCallbacks( retrievedText ) { console.log(retrievedText) }
+      function yourCallbacks( retrievedText ) { 
+        console.log(retrievedText);
+        someanimations();
+       }
 
     </script>
     <h2> Instrument: </h2>

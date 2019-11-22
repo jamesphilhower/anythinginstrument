@@ -61,9 +61,9 @@ class SingleMotionDetector:
             r = cv2.selectROI(still)
             imcrop = still[int(r[1]):int(r[1]+r[3]), int(r[0]):int(r[0]+r[2])]
             for c, color in enumerate(colors):
-                q85, q15 = np.percentile(imcrop[:,:,c], [85, 15])
-                self.lower.append(q15)
-                self.upper.append(q85)
+                q85, q15 = np.percentile(imcrop[:,:,c], [99, 1])
+                self.lower.append(q15 - 10)
+                self.upper.append(q85 + 10)
             self.trys = 1
             cv2.destroyAllWindows()
 
@@ -83,7 +83,7 @@ class SingleMotionDetector:
         #detected_color_floats = cv2.cvtColor(color_select, cv2.COLOR_BGR2GRAY)
 
         """Float Values"""
-        detected_motion_floats = cv2.absdiff(self.bg.astype("uint8"), gray_image) 
+        #detected_motion_floats = cv2.absdiff(self.bg.astype("uint8"), gray_image) 
         
         # Debugging
         #cv2.imshow("self.bg", self.bg)
@@ -91,10 +91,10 @@ class SingleMotionDetector:
 
 
         """Binary Values"""
-        detected_motion_binary = cv2.threshold(detected_motion_floats, tVal, 255, cv2.THRESH_BINARY)[1]
+        #detected_motion_binary = cv2.threshold(detected_motion_floats, tVal, 255, cv2.THRESH_BINARY)[1]
         #detected_color_binary = cv2.threshold(detected_color_floats, 1, 255, cv2.THRESH_BINARY)[1]
 
-        combined_binary = cv2.bitwise_and(detected_color_binary, detected_motion_binary)
+        #combined_binary = cv2.bitwise_and(detected_color_binary, detected_motion_binary)
 
         # perform a series of erosions and dilations to remove small
         # blobs
@@ -111,55 +111,29 @@ class SingleMotionDetector:
         # 	available_morphological_transformations -= 1
         # 	<insert morphological operations>
         #	tracked_objects_int, coords_one, coords_two = def analyze_objects_in_binary(combined_color_and_motion_binary, previous_coords_one, previous_coords_two)
-
+        combined_binary = detected_color_binary
         combined_binary = cv2.erode(combined_binary, None, iterations=2)
         combined_binary = cv2.dilate(combined_binary, None, iterations=2)
 
-        # Debugging
-        #cv2.imshow("changed_detected_motion_binary", detected_motion_binary)
-        #cv2.waitKey(0)
-
         # TODO Figure out the erosion and dilations=========================
-
-
-
-        # TODO Change into getting the bounding boxes, or centroids, or whatever, from 
-        # detected_motion_binary , may already be done from count_objects_in_binary, 
-        # 
-        # find contours in the thresholded image and initialize the
-        # minimum and maximum bounding box regions for motion
-        """cnts = cv2.findContours(detected_motion_binary.copy(), cv2.RETR_EXTERNAL,
-            cv2.CHAIN_APPROX_SIMPLE)
-        cnts = imutils.grab_contours(cnts)
-        (minX, minY) = (np.inf, np.inf)
-        (maxX, maxY) = (-np.inf, -np.inf
-
-        # if no contours were found, return None
-        if len(cnts) == 0:
-            return None
-
-        # otherwise, loop over the contours
-        for c in cnts:
-            # compute the bounding box of the contour and use it to
-            # update the minimum and maximum bounding box regions
-            (x, y, w, h) = cv2.boundingRect(c)
-            (minX, minY) = (min(minX, x), min(minY, y))
-            (maxX, maxY) = (max(maxX, x + w), max(maxY, y + h))
-
-        # otherwise, return a tuple of the thresholded image along
-        # with bounding box
         # TODO return two bounding boxes based on the two points we find
-        """
+        
         n = 4
         labels = measure.label(combined_binary, n)
         features = measure.regionprops(labels)
         properties = sorted(features, key=lambda p: p.area, reverse=True)
+
         if len(properties) == 0:
             return None
         elif len(properties) == 1:
-            return_string = "\t".join([str(x) for x in [properties[0].area, properties[0].centroid]])
+            return_string = "\t".join([str(x) for x in [properties[0].centroid]])
         else:
-            return_string = "\t".join([str(x) for x in [properties[0].area, properties[0].centroid, properties[1].area, properties[1].centroid]])
+            return_string = "\t".join([str(x) for x in [properties[0].centroid, properties[1].centroid]])
 
-        print("From Function",return_string)
-        return return_string
+        minY = properties[0].bbox[0] 
+        minX = properties[0].bbox[1] 
+        maxY = properties[0].bbox[2] 
+        maxX = properties[0].bbox[3] 
+
+        print("Coords",minX, maxX, minY, maxY)
+        return return_string, combined_binary, minX, minY, maxX, maxY#, detected_color_binary, detected_motion_binary
