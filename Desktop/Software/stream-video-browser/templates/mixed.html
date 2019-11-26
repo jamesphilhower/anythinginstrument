@@ -1,11 +1,111 @@
 <html>
   <head>
     <title>Motion</title>
+    <script>
+        
+        const playingClass = 'playing',
+            crashRide = document.getElementById('crash-ride'),
+            hiHatTop = document.getElementById('hihat-top');
+
+        function playSound(e){
+            const keyCode = e,
+                keyElement = document.querySelector(`div[data-key="${e}"]`);
+
+            if(!keyElement) return;
+
+            const audioElement = document.querySelector(`audio[data-key="${e}"]`);
+            audioElement.currentTime = 0;
+            audioElement.play();
+
+            keyElement.classList.add(playingClass);
+        };
+
+        const removeCrashRideTransition = e => {
+            if(e.propertyName !== 'transform') return;
+
+            e.target.style.transform = 'rotate(-7.2deg) scale(1.5)';
+        };
+
+        const removeHiHatTopTransition = e => {
+            if(e.propertyName !== 'top') return;
+
+            e.target.style.top = '166px';
+        };	
+
+        const removeKeyTransition = e => {
+            if(e.propertyName !== 'transform') return;
+
+            e.target.classList.remove(playingClass)
+        };
+
+        const drumKeys = Array.from(document.querySelectorAll('.key'));
+
+        drumKeys.forEach(key => {
+            key.addEventListener('transitionend', removeKeyTransition);
+        });
+
+      function someanimationz(){
+        fetch("{{url_for('text_feed') }}").then((response) => response.text().then(yourCallback));
+      }
+
+      function yourCallback( retrievedText ) { 
+            console.log(retrievedText);
+            playSound(retrievedText);
+            someanimationz();
+      }    
+      //someanimationz();
+      </script>
   </head>
   <body>
     <img src="{{ url_for('video_feeder') }}">
+
     <img src="{{ url_for('video_feeder2') }}">
     <img src="{{ url_for('video_feeder3') }}">
 
+    <div class="drum-kit-wrapper">
+            <div data-key="74" class="key snare">
+              <kbd>J</kbd>
+            </div>
+            <div data-key="66" class="key kick">
+              <kbd>B</kbd>
+            </div>
+            <div data-key="86" class="key kick2">
+              <kbd>V</kbd>
+            </div>
+            <div data-key="72" class="key tom-high">
+              <kbd>H</kbd>
+            </div>
+            <div data-key="71" class="key tom-mid">
+              <kbd>G</kbd>
+            </div>
+            <div data-key="70" class="key tom-low">
+              <kbd>F</kbd>
+            </div>
+            <div data-key="69" class="key crash">
+              <kbd>E</kbd>
+            </div>
+            <div data-key="82" class="key ride">
+              <kbd>R</kbd>
+            </div>
+            <div data-key="73" class="key hihat-open">
+              <kbd>I</kbd>
+            </div>
+            <div data-key="75" class="key hihat-close">
+              <kbd>K</kbd>
+            </div>
+          </div>
+        </section>
+      </main>
+      <audio data-key="74" src="https://raw.githubusercontent.com/ArunMichaelDsouza/javascript-30-course/master/src/01-javascript-drum-kit/sounds/snare.wav"></audio>
+      <audio data-key="66" src="https://raw.githubusercontent.com/ArunMichaelDsouza/javascript-30-course/master/src/01-javascript-drum-kit/sounds/kick.wav"></audio>
+      <audio data-key="86" src="https://raw.githubusercontent.com/ArunMichaelDsouza/javascript-30-course/master/src/01-javascript-drum-kit/sounds/kick.wav"></audio>
+      <audio data-key="72" src="https://raw.githubusercontent.com/ArunMichaelDsouza/javascript-30-course/master/src/01-javascript-drum-kit/sounds/tom-high.wav"></audio>
+      <audio data-key="71" src="https://raw.githubusercontent.com/ArunMichaelDsouza/javascript-30-course/master/src/01-javascript-drum-kit/sounds/tom-mid.wav"></audio>
+      <audio data-key="70" src="https://raw.githubusercontent.com/ArunMichaelDsouza/javascript-30-course/master/src/01-javascript-drum-kit/sounds/tom-low.wav"></audio>
+      <audio data-key="69" src="https://raw.githubusercontent.com/ArunMichaelDsouza/javascript-30-course/master/src/01-javascript-drum-kit/sounds/crash.wav"></audio>
+      <audio data-key="82" src="https://raw.githubusercontent.com/ArunMichaelDsouza/javascript-30-course/master/src/01-javascript-drum-kit/sounds/ride.wav"></audio>
+      <audio data-key="73" src="https://raw.githubusercontent.com/ArunMichaelDsouza/javascript-30-course/master/src/01-javascript-drum-kit/sounds/hihat-open.wav"></audio>
+      <audio data-key="75" src="https://raw.githubusercontent.com/ArunMichaelDsouza/javascript-30-course/master/src/01-javascript-drum-kit/sounds/hihat-close.wav"></audio>
+          
 </body>
 </html>

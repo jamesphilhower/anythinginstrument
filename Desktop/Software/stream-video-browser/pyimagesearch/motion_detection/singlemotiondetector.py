@@ -4,7 +4,7 @@ import numpy as np
 import imutils
 import cv2
 from skimage import measure
-
+import math
 
 class SingleMotionDetector:
     def __init__(self, accumWeight=0.5):
@@ -18,8 +18,9 @@ class SingleMotionDetector:
         # use to select the pieces see update()
         self.bg = None
         # tracked_objects_int, number of items in the picture
-        # current_coords_one, [x, y] - based on closest previous of previous_coords
-        # current_coords_two, [x, y] - based on closest previous of previous_coords
+        self.coords = {}
+        self.coords["left"] = (0, 100)
+        self.coords["right"] = (300, 100)
         # 	self.previous_coords_one = -1
         #	self.previous_coords_two = -1
         # 	self.current_coords_one = -1
@@ -30,8 +31,51 @@ class SingleMotionDetector:
         # May be array of classes
         # self.instruments = {}
         # TODO make instrument class
+    def find_nearest_coord(self, coords):
 
+        def calculateDistance(coord2, distances):  
+            for item in ["left", "right"]:
+                coord1 = self.coords[item]
+                (x1, y1), (x2, y2) = coord1, coord2
+                dist = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)  
+                distances.append([dist, item, coord2])
+                
+        def dista(coord1, coord2):
+            (x1, y1), (x2, y2) = coord1, coord2
+            dist = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+            return dist
+        
+        def get_direction(coord1, coord2):
+            if dista(coord1, coord2) > 7:
+                if coord1[1] < coord2[1]:
+                    direction = "Down"
+                else:
+                    direction = "Up"
+                if coord1[0] > coord2[0]:
+                    direction += " Left"
+                else:
+                    direction += " Right"
+                print(direction, coord1,"-->", coord2)
 
+        distances = []
+        for coord in coords:
+            calculateDistance(coord, distances)
+
+        distances.sort(key=lambda x: x[0])  
+
+        while len(distances) > 0:
+            closer_key = distances[0][1]
+            closer_points = distances[0][2]
+            cond1 = closer_key == "left" and self.coords["right"] != closer_points
+            cond2 = closer_key == "right" and self.coords["left"] != closer_points
+            if  cond1 or cond2:
+                if distances[0][0] > 10:
+                    print(closer_key)
+                    get_direction(self.coords[closer_key], closer_points)
+                self.coords[closer_key] = closer_points
+            for item in distances:
+                if item[2] == closer_points or item[1] == closer_key:
+                    distances.remove(item)
     # This Function is used to update the frame from the webcame that
     # we are analyzing
     def update(self, image):
@@ -61,43 +105,22 @@ class SingleMotionDetector:
             r = cv2.selectROI(still)
             imcrop = still[int(r[1]):int(r[1]+r[3]), int(r[0]):int(r[0]+r[2])]
             for c, color in enumerate(colors):
-                q85, q15 = np.percentile(imcrop[:,:,c], [99, 1])
-                self.lower.append(q15 - 10)
-                self.upper.append(q85 + 10)
+                q85, q15 = np.percentile(imcrop[:,:,c], [90, 10])
+                self.lower.append(q15)
+                self.upper.append(q85)
             self.trys = 1
             cv2.destroyAllWindows()
 
-        """for c, color in enumerate(colors):           
-            color_select = np.copy(color_image)
-            for e, row in enumerate(color_select[:,:,c]):
-                for f, pixel in enumerate(row):
-                    if pixel != 0 and (pixel > self.q[c][0] or pixel < self.q[c][1]):
-                        color_select[e][f][0] = 0
-                        color_select[e][f][1] = 0
-                        color_select[e][f][2] = 0
-
-        """
         detected_color_binary = cv2.inRange(color_image, np.array(self.lower), np.array(self.upper))
-        
-
-        #detected_color_floats = cv2.cvtColor(color_select, cv2.COLOR_BGR2GRAY)
+        combined_binary = detected_color_binary
 
         """Float Values"""
         #detected_motion_floats = cv2.absdiff(self.bg.astype("uint8"), gray_image) 
-        
-        # Debugging
-        #cv2.imshow("self.bg", self.bg)
-        #cv2.imshow("detected_motion_floats", detected_motion_floats)
-
-
+     
         """Binary Values"""
         #detected_motion_binary = cv2.threshold(detected_motion_floats, tVal, 255, cv2.THRESH_BINARY)[1]
-        #detected_color_binary = cv2.threshold(detected_color_floats, 1, 255, cv2.THRESH_BINARY)[1]
 
         #combined_binary = cv2.bitwise_and(detected_color_binary, detected_motion_binary)
-
-        # perform a series of erosions and dilations to remove small
-        # blobs
 
         # TODO Figure out the erosion and dilations========================= 
         # Need to do these until there are only two objects left in the image 
@@ -111,9 +134,19 @@ class SingleMotionDetector:
         # 	available_morphological_transformations -= 1
         # 	<insert morphological operations>
         #	tracked_objects_int, coords_one, coords_two = def analyze_objects_in_binary(combined_color_and_motion_binary, previous_coords_one, previous_coords_two)
-        combined_binary = detected_color_binary
-        combined_binary = cv2.erode(combined_binary, None, iterations=2)
-        combined_binary = cv2.dilate(combined_binary, None, iterations=2)
+        temp_binary = cv2.erode(combined_binary,kernel = np.ones((2, 2),np.uint8), iterations=3)
+        detected_color_binary = cv2.erode(combined_binary,kernel = np.ones((2, 2),np.uint8), iterations=3)
+        detected_motion_binary = cv2.erode(combined_binary,kernel = np.ones((2, 2),np.uint8), iterations=3)
+
+
+        temp_binary = cv2.dilate(temp_binary,kernel = np.ones((2, 2),np.uint8), iterations=5)
+        detected_color_binary = cv2.dilate(detected_color_binary,kernel = np.ones((4, 4),np.uint8), iterations=5)
+        detected_motion_binary = cv2.dilate(detected_motion_binary,kernel = np.ones((5, 5),np.uint8), iterations=5)
+
+
+
+
+        combined_binary = temp_binary
 
         # TODO Figure out the erosion and dilations=========================
         # TODO return two bounding boxes based on the two points we find
@@ -126,14 +159,39 @@ class SingleMotionDetector:
         if len(properties) == 0:
             return None
         elif len(properties) == 1:
-            return_string = "\t".join([str(x) for x in [properties[0].centroid]])
+            self.find_nearest_coord([properties[0].centroid])            
+
+            minY = properties[0].bbox[0] 
+            minX = properties[0].bbox[1] 
+            maxY = properties[0].bbox[2] 
+            maxX = properties[0].bbox[3] 
+            minY2 = None
+            minX2 = None 
+            maxY2 = None
+            maxX2 = None
+            if minY < 150 and minX < 150:
+                return_string = "69"
+            elif minY > 150 and minX < 150:
+                return_string = "70"
+            elif minY < 150 and minX > 150:
+                return_string = "71"
+            else:
+                return_string = "72"
+
+        
         else:
-            return_string = "\t".join([str(x) for x in [properties[0].centroid, properties[1].centroid]])
+            self.find_nearest_coord([properties[0].centroid, properties[1].centroid])
+            #return_string = "\t".join([str(x) for x in [properties[0].centroid, properties[1].centroid]])
+            return_string = "73"
+            minY = properties[0].bbox[0] 
+            minX = properties[0].bbox[1] 
+            maxY = properties[0].bbox[2] 
+            maxX = properties[0].bbox[3] 
+            minY2 = properties[1].bbox[0] 
+            minX2 = properties[1].bbox[1] 
+            maxY2 = properties[1].bbox[2] 
+            maxX2 = properties[1].bbox[3] 
+        
 
-        minY = properties[0].bbox[0] 
-        minX = properties[0].bbox[1] 
-        maxY = properties[0].bbox[2] 
-        maxX = properties[0].bbox[3] 
 
-        print("Coords",minX, maxX, minY, maxY)
-        return return_string, combined_binary, minX, minY, maxX, maxY#, detected_color_binary, detected_motion_binary
+        return return_string, combined_binary, minX, minY, maxX, maxY, minX2, minY2, maxX2, maxY2, detected_color_binary, detected_motion_binary

@@ -183,6 +183,10 @@ def detect_motion(frameCount):
 	# TODO figure out how accumWeight changes things
 	md = SingleMotionDetector(accumWeight=0.1)
 	total = 0
+	frame = vs.read()
+	frame = imutils.resize(frame, width=400)
+
+	_detected_motion_binary_ = np.full(frame.shape, 255)
 
 	# loop over frames from the video stream
 	while True:
@@ -196,10 +200,9 @@ def detect_motion(frameCount):
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 		# TODO expreiment not blurring vs blurring and how much
 		gray = cv2.GaussianBlur(gray, (7, 7), 0)
-		_detected_motion_binary_ = np.full(gray.shape, 255)
-		color_frame = np.full(gray.shape, 255)
-		motion_frame = np.full(gray.shape, 255)
-
+		#color_frame = np.full(gray.shape, 255)
+		#motion_frame = np.full(gray.shape, 255)
+		coords_string = "0"
 		# if the total number of frames has reached a sufficient
 		# number to construct a reasonable background model, then
 		# continue to process the frame
@@ -209,22 +212,23 @@ def detect_motion(frameCount):
 			# check to see if motion was found in the frame
 			if motion is not None:
 				#coords_string, _detected_motion_binary_, minX, minY, maxX, maxY, color_frame, motion_frame, = motion
-				coords_string, _detected_motion_binary_, minX, minY, maxX, maxY = motion
+				coords_string, _detected_motion_binary_, minX, minY, maxX, maxY, minX2, minY2, maxX2, maxY2, color_frame, motion_frame = motion
 
 				cv2.rectangle(_detected_motion_binary_, (int(minX), int(minY)), (int(maxX), int(maxY)), (255), 2)
-				#cv2.rectangle(color_frame, (int(minX), int(minY)), (int(maxX), int(maxY)), (255), 2)
+				if maxX2 is not None:
+					cv2.rectangle(_detected_motion_binary_, (int(minX2), int(minY2)), (int(maxX2), int(maxY2)), (255), 2)
 				#cv2.rectangle(motion_frame, (int(minX), int(minY)), (int(maxX), int(maxY)), (255), 2)
 
 		# update the background model and increment the total number
 		# of frames read thus far
-		#md.update(gray)
+		md.update(gray)
 		total += 1
 
 		# acquire the lock, set the output frame, and release the
 		# lock
 		# TODO may want to copy something other than frame, like _detected_motion_binary_
 		with lock:
-			location = motion
+			location = coords_string
 			outputFrame = _detected_motion_binary_
 		
 def generate():
@@ -299,11 +303,10 @@ import random
 import string		
 def audio_connection():
 	# grab global references to the output frame and lock variables	
-	global string_test
+	global location
 	
 	#string_test = randomString()
-	string_test = str(random.randint(69,75))
-	return string_test
+	return location
 
 @app.route("/classtest")
 def test_feed_class():
