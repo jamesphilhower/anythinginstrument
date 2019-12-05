@@ -5,6 +5,10 @@ import imutils
 import cv2
 from skimage import measure
 import math
+class instrument_:
+    def __init__(self):
+
+        self.playable = True
 
 class SingleMotionDetector:
     def __init__(self, accumWeight=0.5):
@@ -21,11 +25,20 @@ class SingleMotionDetector:
         self.coords = {}
         self.coords["left"] = (0, 100)
         self.coords["right"] = (300, 100)
-        # 	self.previous_coords_one = -1
-        #	self.previous_coords_two = -1
-        # 	self.current_coords_one = -1
-        #	self.current_coords_two = -1
-        # 	self.tracked_objects_int = 9999
+        #   self.previous_coords_one = -1
+        #   self.previous_coords_two = -1
+        #   self.current_coords_one = -1
+        #   self.current_coords_two = -1
+        #   self.tracked_objects_int = 9999
+
+        
+        sounds = ["66", "69", "70", "71", "72", "73", "74", "75", "82", "86"] 
+
+
+        self.instruments_ = {}
+
+        for item in sounds:
+            self.instruments_[item] = instrument_()
 
         # TODO We have to load the instruments and save the rgb values
         # May be array of classes
@@ -131,9 +144,9 @@ class SingleMotionDetector:
         # available_morphological_transformations = 5 # Max limit of how many 
         # times we will apply morphological transformation before moving on to next step
         #while tracked_objects_int > 2 and available_morphological_transformations > 0:
-        # 	available_morphological_transformations -= 1
-        # 	<insert morphological operations>
-        #	tracked_objects_int, coords_one, coords_two = def analyze_objects_in_binary(combined_color_and_motion_binary, previous_coords_one, previous_coords_two)
+        #   available_morphological_transformations -= 1
+        #   <insert morphological operations>
+        #   tracked_objects_int, coords_one, coords_two = def analyze_objects_in_binary(combined_color_and_motion_binary, previous_coords_one, previous_coords_two)
         temp_binary = cv2.erode(combined_binary,kernel = np.ones((2, 2),np.uint8), iterations=3)
         detected_color_binary = cv2.erode(combined_binary,kernel = np.ones((2, 2),np.uint8), iterations=3)
         detected_motion_binary = cv2.erode(combined_binary,kernel = np.ones((2, 2),np.uint8), iterations=3)
@@ -158,7 +171,7 @@ class SingleMotionDetector:
 
         if len(properties) == 0:
             return None
-        elif len(properties) == 1:
+        else:
             self.find_nearest_coord([properties[0].centroid])            
 
             minY = properties[0].bbox[0] 
@@ -169,20 +182,50 @@ class SingleMotionDetector:
             minX2 = None 
             maxY2 = None
             maxX2 = None
-            if minY < 150 and minX < 150:
+            sounds = ["66", "69", "70", "71", "72", "73", "74", "75", "82", "86"] 
+            counter = 0
+            return_string = ""
+            for sound, x in zip(sounds, range(0,401,40)):
+                if self.instruments_[sound].playable:
+                    if minX < x and minY > 150:
+                        return_string = return_string + sound+" "
+                        self.instruments_[sound].playable = False
+                else:
+                    if minX > x or minY < 150:
+                        self.instruments_[sound].playable = True
+
+            print("return"+return_string)
+                    
+            """
+            if minY < 20 and minX < 20:
+                if instruments["66"] = True:
+                    return_string = 0
+                return_string = "66"
+            elif minY > 30 and minY < 50 and minX > 30 and minX < 50:
                 return_string = "69"
-            elif minY > 150 and minX < 150:
+            elif minY > 60 and minY < 80 and minX > 60 and minX < 80:
                 return_string = "70"
-            elif minY < 150 and minX > 150:
+            elif minY > 90 and minY < 110 and minX > 90 and minX < 110:
                 return_string = "71"
-            else:
-                return_string = "72"
+            """
+            #elif minY < 150 and minX < 150:
+            #    return_string = "72"
+            #elif minY < 180 and minX < 180:
+             #   return_string = "73"
+            #elif minY < 210 and minX < 210:
+              #  return_string = "74"
+            #elif minY < 240 and minX < 240:
+               # return_string = "75"
+            #elif minY < 270 and minX < 270:
+             #   return_string = "82"
+            #else:
+            #    return_string = "86"
 
         
-        else:
-            self.find_nearest_coord([properties[0].centroid, properties[1].centroid])
+            #else:
+            #self.find_nearest_coord([properties[0].centroid, properties[1].centroid])
             #return_string = "\t".join([str(x) for x in [properties[0].centroid, properties[1].centroid]])
-            return_string = "73"
+            """return_string = ""
             minY = properties[0].bbox[0] 
             minX = properties[0].bbox[1] 
             maxY = properties[0].bbox[2] 
@@ -190,7 +233,7 @@ class SingleMotionDetector:
             minY2 = properties[1].bbox[0] 
             minX2 = properties[1].bbox[1] 
             maxY2 = properties[1].bbox[2] 
-            maxX2 = properties[1].bbox[3] 
+            maxX2 = properties[1].bbox[3] """
         
 
 
