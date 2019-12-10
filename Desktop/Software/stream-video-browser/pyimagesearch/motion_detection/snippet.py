@@ -31,3 +31,11 @@ def initialize_detect():
         self.upper.append(q85)
     self.trys = 1
     cv2.destroyAllWindows()
+
+
+        self.coords = {}
+
+        def set_coords(self, instrument):
+            global camera.spacing
+            for item in instrument.pieces:
+                self.coords[item] = (instrument.spacing * camera.spacing, instrument.spacing * camera.spacing)

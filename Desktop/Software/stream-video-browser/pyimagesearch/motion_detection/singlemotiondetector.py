@@ -134,6 +134,7 @@ class SingleMotionDetector:
         # 	available_morphological_transformations -= 1
         # 	<insert morphological operations>
         #	tracked_objects_int, coords_one, coords_two = def analyze_objects_in_binary(combined_color_and_motion_binary, previous_coords_one, previous_coords_two)
+        
         temp_binary = cv2.erode(combined_binary,kernel = np.ones((2, 2),np.uint8), iterations=3)
         detected_color_binary = cv2.erode(combined_binary,kernel = np.ones((2, 2),np.uint8), iterations=3)
         detected_motion_binary = cv2.erode(combined_binary,kernel = np.ones((2, 2),np.uint8), iterations=3)

@@ -39,6 +39,21 @@ sound_lock = threading.Lock()
 
 # initialize a flask object
 app = Flask(__name__)
+import logging
+
+import click
+
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
+def secho(text, file=None, nl=None, err=None, color=None, **styles):
+    pass
+
+def echo(text, file=None, nl=None, err=None, color=None, **styles):
+    pass
+
+click.echo = echo
+click.secho = secho
 
 # initialize the video stream and allow the camera sensor to
 # warmup
