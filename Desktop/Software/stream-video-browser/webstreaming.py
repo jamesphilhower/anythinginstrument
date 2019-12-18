@@ -151,7 +151,7 @@ def video_feeder3():
     return Response(generate_orig3(),
         mimetype = "multipart/x-mixed-replace; boundary=frame")
 
-@app.route("/maria", methods="POST")
+@app.route("/maria", methods=["POST"])
 def maria():
     print(request.data)
 
